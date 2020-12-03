@@ -1,0 +1,163 @@
+﻿
+<div class="task-lists container">
+    <div class="row">
+        <table class="table table-responsive" id="taskTable" style="display: none">
+            <thead>
+                <tr>
+                    <th data-field="Description">Description</th>
+                    <th data-field="CreatedDate">Created Date</th>
+                    <th data-field="UpdatedDate">Updated Date</th>
+                    <th data-field="Status">Status</th>
+                    <th data-field="Remove">Remove</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+<div class="add-task container" style="display: none">
+    <div class="alert alert-success" role="alert" id="successdiv" style="display: none">
+        Todo Saved Successfully.
+    </div>
+    <div class="row">
+        <div class="span12">
+            <h3>Create Todo Tasks</h3>
+            <form method="post" id="TaskForm">
+                <fieldset>
+                    <div class="form-group">
+                        <label for="taskName">TODO Descreption</label>
+                        <input type="text" class="form-control" id="taskName" name="taskName" maxlength="25">
+                    </div>
+                    <br />
+                    <div class="control-group">
+                        <!-- Button -->
+                        <div class="controls">
+                            <button class="btn btn-primary" id="createBtn" type="submit" onclick="CreateTask(event)">Create</button>
+                        </div>
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+    </div>
+</div>
+<script language="javascript" type="text/javascript">
+
+    function Logout(e) {
+        e.preventDefault();
+        // remove the session token
+        localStorage.removeItem('todoToken');
+        window.location  ='@Url.Action("Login", "Login")';
+    }
+    function AddTask(e) {
+        e.preventDefault();
+        $('.add-task').show();
+        $('.task-lists').hide();
+
+    }
+    function ShowTasks(e) {
+        e.preventDefault();
+        $('.add-task').hide();
+        $('.task-lists').show();
+        LoadTasks();
+    }
+
+    function LoadTasks() {
+        $.ajax({
+            url: 'ToDo/List',
+            type: 'Get',
+            headers: {
+                Authorization: 'Bearer ' + window.localStorage.getItem('todoToken')
+            },
+            success: function (data) {
+                $("#taskTable > tbody").html("");
+                $.each(data, function (i, item) {
+                    var updatedDate = item.updatedDate == null ? '' : getDateFormat(new Date(item.updatedDate));
+                    var status = item.isComplete ? "Uncheck" : "Check";
+                    var statusBtn = "<button class='btn btn-primary' id='checkBtn" + item.taskId+"' type='button' onclick='ChangeStatus(" + item.taskId +")'>" + status + "</button>";
+                    var removeBtn = "<button class='btn btn-primary' id='removeBtn' type='button' onclick='RemoveTask(" + item.taskId+")'>Remove</button>";
+                    var tr = '<tr>' +
+                        '<td>' + item.taskName + '</td>' +
+                        '<td>' + getDateFormat(new Date(item.createdDate)) + '</td>' +
+                        '<td>' + updatedDate + '</td>' +
+                        '<td>' + statusBtn + '</td>' +
+                        '<td>' + removeBtn + '</td>' +
+                        '</tr>';
+                    $('#taskTable tbody').append(tr);
+                });
+
+                $('#taskTable').show();
+            },
+            error: function () {
+                alert('An error occured');
+            }
+        });
+    }
+    function RemoveTask(taskId) {
+
+        $.ajax({
+            url: 'ToDo/Remove',
+            type: 'POST',
+            data: { taskId: taskId },
+            headers: {
+                Authorization: 'Bearer ' + window.localStorage.getItem('todoToken')
+            },
+            success: function (data) {
+                LoadTasks();
+            },
+            error: function () {
+                alert('An error occured');
+            }
+        });
+    }
+    function ChangeStatus(taskId) {
+        var btnId = "#checkBtn" + taskId;
+        var btnText = $(btnId).text();
+        var status = btnText == 'Check' ? true : false;
+        $.ajax({
+            url: 'ToDo/ChangeStatus',
+            data: { status: status, taskId: taskId },
+            type: 'POST',
+            headers: {
+                Authorization: 'Bearer ' + window.localStorage.getItem('todoToken')
+            },
+            success: function (data) {
+                LoadTasks();
+            },
+            error: function () {
+                alert('An error occured');
+            }
+        });
+    }
+
+
+    function getDateFormat(date) {
+
+        var dd = String(date.getDate()).padStart(2, '0');
+        var mm = String(date.getMonth() + 1).padStart(2, '0'); //January is 0!
+        var yyyy = date.getFullYear();
+
+        return dd + '-' + mm + '-' + yyyy;
+    }
+
+    function CreateTask(e) {
+        e.preventDefault();
+
+        $('#successdiv').hide();
+        var form = $("Form#TaskForm");
+        $.ajax({
+            url: 'ToDo/Create',
+            data: form.serialize(),
+            type: 'POST',
+            headers: {
+                Authorization: 'Bearer ' + window.localStorage.getItem('todoToken')
+            },
+            success: function (data) {
+                $('#taskName').val('');
+                $('#successdiv').show();
+            },
+            error: function () {
+                alert('An error occured');
+            }
+        });
+    }
+</script>

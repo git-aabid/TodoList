@@ -1,0 +1,82 @@
+﻿
+<div class="container">
+    <div class="alert alert-danger" role="alert" id="errorDiv" style="display: none">
+        Please fill all the fields
+    </div>
+    <div class="row">
+        <div class="span12">
+            <form method="post" id="loginForm">
+                <fieldset>
+                    <div class="form-group">
+                        <label for="userName">UserName</label>
+                        <input type="text" class="form-control" id="userName" name="userName" maxlength="25">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" class="form-control" id="password" name="password">
+                    </div>
+                    <br />
+                    <div class="control-group">
+                        <!-- Button -->
+                        <div class="controls">
+                            <button class="btn btn-primary" id="loginBtn" type="submit" onclick="Login(event)">Login</button>
+                        </div>
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+    </div>
+</div>
+<script language="javascript" type="text/javascript">
+    window.addEventListener('load', function () {
+        $('.home').hide();
+        $('.task').hide();
+        $('.logout').hide();
+    })
+    function Login(e) {
+        e.preventDefault();
+        $('#errorDiv').hide();
+        var form = $("Form#loginForm");
+        $.ajax({
+            url: 'Login/Login',
+            data: form.serialize(),
+            type: 'POST',
+            success: function (data) {
+                if (data.error) {
+                    $('#errorDiv').html(data.error).show();
+                }
+                else if (data.token) {
+                    // set the token to local storage 
+                    window.localStorage.setItem("todoToken", data.token);
+                    // redirect to new page with authorization token.
+                    $.ajax({
+                        url: 'Home/Index',
+                        type: 'GET',
+                        // Fetch the stored token from localStorage and set in the header
+                        headers: {
+                            Authorization: 'Bearer ' + data.token
+                        },
+                        success: function (res) {
+                            $('.containerMain').html(res);
+                            $('.home').show();
+                            $('.task').show();
+                            $('.logout').show();
+
+                            // load user' tasks.
+                            LoadTasks();
+
+                           
+                        }
+                    });
+                }
+            },
+            error: function () {
+                alert('Could not get Data');
+            }
+        });
+    }
+
+</script>
+
+
+
